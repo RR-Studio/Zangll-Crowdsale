@@ -1,7 +1,5 @@
 pragma solidity ^0.4.16;
 
-
-
 library SafeMath {
   function mul(uint256 a, uint256 b) internal constant returns (uint256) {
     uint256 c = a * b;
@@ -30,7 +28,7 @@ library SafeMath {
 
 interface Zangll    {
 
-  function balanceOf(address who) public constant returns (uint256);
+    function balanceOf(address who) public constant returns (uint256);
     function transfer(address to, uint256 value) public returns (bool);
     function allowance(address owner, address spender) public constant returns (uint256);
     function transferFrom(address from, address to, uint256 value) public returns (bool);
@@ -68,7 +66,7 @@ contract Ownable {
 contract CrowdsaleZangll is Ownable {
   mapping(address => uint256) purchases;  // сколько токенов купили на данный адрес
   MyFiatContract public MyPrice;
-  event Debag (string message);
+  event Debug (string message);
   event TokenPurchased(address purchaser, uint256 value, uint amount);
   event ContractPaused(uint time);
   event ContractPauseOff(uint time);
@@ -88,7 +86,6 @@ contract CrowdsaleZangll is Ownable {
 
 
     Zangll token = Zangll(0x632E15775Acb67303178aa8b08A26ba594f18D84);
-    MyFiatContract MyPrice = MyFiatContract(0x995A54273C41A44735C289C92C54B0C8033932B2);
 
     uint start;   // start of CrowdsaleZangll
 
@@ -127,7 +124,7 @@ contract CrowdsaleZangll is Ownable {
       purchaseCap = 3000000 * 10 ** 18;  // 3_000_000 tokens to one address
       totalPurchased = 0;
       maxPurchase = 140000000 * 10 ** 18; // 140_000_000 tokens sales on crowdsale
-      Debag("crowdsale inits");
+      Debug("crowdsale inits");
       pause = false;
       end = false;
     }
@@ -176,12 +173,12 @@ contract CrowdsaleZangll is Ownable {
       uint tokens = msg.value.mul(ETHUSD).div(priceInCents);  // вычисление токенов за присланный эфир
       uint bonusTokens = 0;
         // uint bonusTokens = tokens.mul(bonusPercent).div(100);
-      //Debag("base tokens = " + string(tokens));
+      Debug("base tokens = " + string(tokens));
       if(now < start + 1 hours ) {                    //1 hour
         bonusTokens = tokens.mul(35).div(100);
       } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
         bonusTokens = tokens.mul(30).div(100);
-      } else if(now >= start + 1 days && now < start + 2 days) { // 2 day 
+      } else if(now >= start + 1 days && now < start + 2 days) { // 2 day
         bonusTokens = tokens.mul(25).div(100);
       } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
         bonusTokens = tokens.mul(20).div(100);
@@ -195,7 +192,7 @@ contract CrowdsaleZangll is Ownable {
       require(token.balanceOf(this) >= tokensWithBonus);
       require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
       require(maxPurchase >= totalPurchased + tokensWithBonus); //
-      //Debag("total tokens = " + string(tokensWithBonus));
+      Debug("total tokens = " + string(tokensWithBonus));
       TokenPurchased(msg.sender, msg.value, tokensWithBonus);  // ивент покупки токенов (покупатель, цена в эфирах, кол-во токенов)
       purchases[msg.sender] = purchases[msg.sender].add(tokensWithBonus);     // записать на адрес сумму купленных токенов
       totalPurchased = totalPurchased.add(tokensWithBonus);        // суммировать все купленные токены
