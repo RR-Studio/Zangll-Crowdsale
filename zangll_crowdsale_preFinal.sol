@@ -181,7 +181,7 @@ contract CrowdsaleZangll is Ownable {
         bonusTokens = tokens.mul(35).div(100);
       } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day 
         bonusTokens = tokens.mul(30).div(100);
-      } else if(now >= start + start + 1 days && now < start + 2 days) { // 2 day 
+      } else if(now >= start + 1 days && now < start + 2 days) { // 2 day 
         bonusTokens = tokens.mul(25).div(100);
       } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
         bonusTokens = tokens.mul(20).div(100);
