@@ -1286,14 +1286,14 @@ contract CrowdsaleZangll is TickerController {
         uint bonusTokens = 0;
 
         Debug("tokens without bonuses = ");
-        Debug256(string(tokens));
+        Debug256(tokens);
         if(now < start + 1 hours ) {                    //1 hour
           bonusTokens = tokens.mul(35).div(100);
           Debug("bonus period 35");
         } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
           Debug("bonus period 30");
           bonusTokens = tokens.mul(30).div(100);
-        } else if(now >= start + start + 1 days && now < start + 2 days) { // 2 day
+        } else if(now >= start + 1 days && now < start + 2 days) { // 2 day
           Debug("bonus period 25");
           bonusTokens = tokens.mul(25).div(100);
         } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
@@ -1305,13 +1305,24 @@ contract CrowdsaleZangll is TickerController {
         } else if(now >= start + 2 weeks && now < start + 3 weeks) {    // 3 week
           Debug("bonus period 10");
           bonusTokens = tokens.mul(10).div(100);
+        } else {
+
+          Debug("Not entred to period");
+
+          Debug("now = ");
+          Debug256(now);
+
+          Debug("start = " + string(now));
+          Debug256(start);
+
+
         }
         uint tokensWithBonus = tokens.add(bonusTokens);
 
         Debug("bonuses = " );
-        Debug256(string(bonusTokens));
+        Debug256(bonusTokens);
         Debug("tokens with bonuses = ");
-        Debug256(string(tokensWithBonus));
+        Debug256(tokensWithBonus);
 
         require(tokens != 0);
         require(token.balanceOf(this) >= tokensWithBonus);
