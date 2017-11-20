@@ -234,7 +234,7 @@ contract ZangllCoin is BurnableToken {
   /**
    * @dev Constructor that gives msg.sender all of existing tokens.
    */
-  function Zangll() {
+  function ZangllCoin() {
     totalSupply = INITIAL_SUPPLY;
     balances[msg.sender] = INITIAL_SUPPLY;
   }
