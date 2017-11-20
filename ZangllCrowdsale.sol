@@ -1241,6 +1241,7 @@ contract CrowdsaleZangll is TickerController {
     using SafeMath for uint256;
 
     event Debug (string message);
+    event Debug256 (uint256 message);
 
     // The token being sold
     ZangllCoin public token = ZangllCoin(0x1a7777156a83a99c3757c1f2bac5254cb93d7401);
@@ -1284,7 +1285,8 @@ contract CrowdsaleZangll is TickerController {
         uint tokens = msg.value.mul(centsPerETH).div(priceInCents);  // вычисление токенов за присланный эфир
         uint bonusTokens = 0;
 
-        Debug("tokens without bonuses = " + string(tokens));
+        Debug("tokens without bonuses = ");
+        Debug256(string(tokens));
         if(now < start + 1 hours ) {                    //1 hour
           bonusTokens = tokens.mul(35).div(100);
           Debug("bonus period 35");
@@ -1306,8 +1308,10 @@ contract CrowdsaleZangll is TickerController {
         }
         uint tokensWithBonus = tokens.add(bonusTokens);
 
-        Debug(" bonuses = " + string(bonusTokens));
-        Debug("tokens with bonuses = " + string(tokensWithBonus));
+        Debug("bonuses = " );
+        Debug256(string(bonusTokens));
+        Debug("tokens with bonuses = ");
+        Debug256(string(tokensWithBonus));
 
         require(tokens != 0);
         require(token.balanceOf(this) >= tokensWithBonus);
