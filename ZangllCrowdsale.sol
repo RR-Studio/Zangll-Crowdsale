@@ -1312,8 +1312,11 @@ contract CrowdsaleZangll is TickerController {
           Debug("now = ");
           Debug256(now);
 
-          Debug("start = " + string(now));
+          Debug("start = ");
           Debug256(start);
+
+          Debug("start + 1 days = ");
+          Debug256(start + 1 days);
 
 
         }
