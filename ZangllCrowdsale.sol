@@ -1334,11 +1334,11 @@ contract CrowdsaleZangll is TickerController {
         require(maxSupply >= totalPurchased + tokensWithBonus);
 
         weiRaised = weiRaised.add(msg.value);
-        funded = funded.add(tokens);
+        funded = funded.add(tokensWithBonus);
         wallet.transfer(msg.value);
-        token.transfer(beneficiary, tokens);
+        token.transfer(beneficiary, tokensWithBonus);
 
-        TokenPurchase(msg.sender, beneficiary, tokens);
+        TokenPurchase(msg.sender, beneficiary, tokensWithBonus);
     }
 
     function() payable {
