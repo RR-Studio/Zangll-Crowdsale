@@ -1247,7 +1247,7 @@ contract CrowdsaleZangll is TickerController {
     uint256 public period = 28;
 
     uint256 public priceInCents = 27;    // price in USD cents for 1 token
-    address public wallet;
+    address public wallet; // 19 nov 2.20 AM 2017 GMT +3
     uint256 public totalPurchased = 0;
         // How many wei of funding we have raised
     uint256 public weiRaised = 0;
