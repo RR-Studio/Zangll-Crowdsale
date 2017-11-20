@@ -1237,40 +1237,49 @@ contract TickerController is Ownable {
 
 
 contract CrowdsaleZangll is TickerController {
-    mapping(address => uint256) purchases;
     using SafeMath for uint256;
 
     // The token being sold
-    ZangllCoin public token = ZangllCoin(0x1a7777156a83a99c3757c1f2bac5254cb93d7401);
+    ZangllCoin public token = ZangllCoin(0x5d9da734421ba8c4d06151948befbb6110c43e7f);
 
-    uint256 public start = 1511047218;
+    uint256 public start = 1511047218;   // 19 nov 2.20 AM 2017 GMT +3
     uint256 public period = 28;
 
+    // Price of 1 token in USD cents
     uint256 public priceInCents = 27;    // price in USD cents for 1 token
-    address public wallet; // 19 nov 2.20 AM 2017 GMT +3
+    
+    // Address where funds are collected
+    address public wallet;  
+
+    // Number of tokens already sold through this contract
     uint256 public totalPurchased = 0;
-        // How many wei of funding we have raised
+    
+    // How many wei of funding we have raised
     uint256 public weiRaised = 0;
 
     // Number of tokens already sold through this contract*/
     uint256 public funded = 0;
 
-    uint256 public maxSupply = 140000000 * 10 ** 18;// maxPurchase
+    // Hard cap
+    uint256 public maxSupply = 140000000 * 10 ** 18;  
 
-    uint256 public purchaseCap = 3000000 * 10 ** 18;  // 3_000_000 tokens to one address
+    // Max tokens to one address
+    uint256 public purchaseCap = 3000000 * 10 ** 18;  
 
-    bool public pause = true;
-    bool public end = false;
 
+    mapping(address => uint256) purchases;
     function purchasesOf(address purchaser) public constant returns (uint256 value) {
       return purchases[purchaser];
     }
 
+
     event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 amount);
+
 
     function CrowdsaleZangll() {
       wallet = msg.sender;
     }
+
 
     function buyTokens(address beneficiary) public payable {
         uint256 centsPerETH = getCentsPerETH();
@@ -1278,24 +1287,28 @@ contract CrowdsaleZangll is TickerController {
         require(now > start && now < start + period * 1 days);
         require(purchases[msg.sender] < purchaseCap);
 
-        uint tokens = msg.value.mul(centsPerETH).div(priceInCents);  // вычисление токенов за присланный эфир
+        uint tokens = msg.value.mul(centsPerETH).div(priceInCents);
         uint bonusTokens = 0;
 
-        if(now < start + 1 hours ) {                    //1 hour
+        if(now < start + 1 hours ) {                                  //1 hour
           bonusTokens = tokens.mul(35).div(100);
-        } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
+        } else if(now >= start + 1 hours && now < start + 1 days) {   // 1 day
           bonusTokens = tokens.mul(30).div(100);
-        } else if(now >= start + 1 days && now < start + 2 days) { // 2 day
+        } else if(now >= start + 1 days && now < start + 2 days) {    // 2 day
           bonusTokens = tokens.mul(25).div(100);
-        } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
+        } else if(now >= start + 2 days && now < start + 1 weeks) {   // 1 week
           bonusTokens = tokens.mul(20).div(100);
-        } else if(now >= start + 1 weeks && now < start + 2 weeks) {  //2 weeks
+        } else if(now >= start + 1 weeks && now < start + 2 weeks) {  // 2 weeks
           bonusTokens = tokens.mul(15).div(100);
-        } else if(now >= start + 2 weeks && now < start + 3 weeks) {    // 3 week
+        } else if(now >= start + 2 weeks && now < start + 3 weeks) {  // 3 week
           bonusTokens = tokens.mul(10).div(100);
         }
-
         uint tokensWithBonus = tokens.add(bonusTokens);
+
+        require(tokens != 0);
+        require(token.balanceOf(this) >= tokensWithBonus);
+        require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
+        require(maxSupply >= totalPurchased + tokensWithBonus);
 
         weiRaised = weiRaised.add(msg.value);
         funded = funded.add(tokensWithBonus);
@@ -1308,4 +1321,5 @@ contract CrowdsaleZangll is TickerController {
     function() payable {
         buyTokens(msg.sender);
     }
+    
 }
