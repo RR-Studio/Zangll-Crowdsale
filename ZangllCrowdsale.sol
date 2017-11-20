@@ -1047,7 +1047,7 @@ library SafeMath {
   }
 }
 
-interface Zangll    {
+interface ZangllCoin    {
 
     function balanceOf(address who) public constant returns (uint256);
     function transfer(address to, uint256 value) public returns (bool);
@@ -1085,53 +1085,53 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 
 contract CMCEthereumTicker is UsingOraclize, Ownable {
     using SafeMath for uint;
-    
+
     uint256 centsPerETH;
     uint256 delay;
     bool enabled;
-    
+
     address manager;
-    
+
     modifier onlyOwnerOrManager() { require(msg.sender == owner || msg.sender == manager); _; }
-    
+
     event newOraclizeQuery(string description);
     event newPriceTicker(string price);
-    
-    
+
+
     function CMCEthereumTicker(address _manager, uint256 _delay) {
         oraclize_setProof(proofType_NONE);
         enabled = false;
         manager = _manager;
         delay = _delay;
     }
-    
+
     function getCentsPerETH() constant returns(uint256) {
         return centsPerETH;
     }
-    
+
     function getDelay() constant returns(uint256) {
         return delay;
     }
-    
+
     function getEnabled() constant returns(bool) {
         return enabled;
     }
 
-    function enable() 
+    function enable()
         onlyOwnerOrManager
     {
         require(enabled == false);
         enabled = true;
         update_instant();
     }
-    
-    function disable() 
+
+    function disable()
         onlyOwnerOrManager
     {
         require(enabled == true);
         enabled = false;
     }
-    
+
     bytes32 private bugFix;
     function __callback(bytes32 myid, string result) {
         if (msg.sender != oraclize_cbAddress()) revert();
@@ -1139,10 +1139,10 @@ contract CMCEthereumTicker is UsingOraclize, Ownable {
         centsPerETH = parseInt(result, 2);
         newPriceTicker(result);
         if (enabled) {
-           update(); 
+           update();
         }
     }
-    
+
     function update_instant() private {
         if (oraclize.getPrice("URL") > this.balance) {
             newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
@@ -1151,7 +1151,7 @@ contract CMCEthereumTicker is UsingOraclize, Ownable {
             oraclize_query("URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
         }
     }
-    
+
     function update() private {
         if (oraclize.getPrice("URL") > this.balance) {
             newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
@@ -1160,75 +1160,75 @@ contract CMCEthereumTicker is UsingOraclize, Ownable {
             oraclize_query(delay, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
         }
     }
-    
-    function payToManager(uint256 _amount) 
+
+    function payToManager(uint256 _amount)
         onlyOwnerOrManager
     {
         manager.transfer(_amount);
     }
-    
-    function () payable {}    
+
+    function () payable {}
 }
 
 /**
  * @title TickerController
- * @dev Contract that manipulates ticker 
+ * @dev Contract that manipulates ticker
  */
 contract TickerController is Ownable {
-    
+
     //Ticker contract
     CMCEthereumTicker priceTicker;
-    
-    function createTicker(uint256 _delay) 
+
+    function createTicker(uint256 _delay)
         onlyOwner
     {
         priceTicker = new CMCEthereumTicker(owner, _delay);
     }
-    
+
     function attachTicker(address _tickerAddress)
         onlyOwner
     {
-        priceTicker = CMCEthereumTicker(_tickerAddress);   
+        priceTicker = CMCEthereumTicker(_tickerAddress);
     }
-    
-    function enableTicker() 
+
+    function enableTicker()
         onlyOwner
     {
         priceTicker.enable();
     }
-    
-    function disableTicker() 
+
+    function disableTicker()
         onlyOwner
     {
         priceTicker.disable();
     }
-    
+
     function sendToTicker() payable
         onlyOwner
     {
         assert(address(priceTicker) != 0x0);
         address(priceTicker).transfer(msg.value);
     }
-    
+
     function withdrawFromTicker(uint _amount)
         onlyOwner
     {
         assert(address(priceTicker) != 0x0);
         priceTicker.payToManager(_amount);
     }
-    
+
     function tickerAddress() constant returns (address) {
         return address(priceTicker);
     }
-    
+
     function getCentsPerETH() constant returns (uint256) {
         return priceTicker.getCentsPerETH();
     }
-    
+
     function getDelay() constant returns(uint256) {
         return priceTicker.getDelay();
     }
-    
+
     function getEnabled() constant returns(bool) {
         return priceTicker.getEnabled();
     }
@@ -1237,26 +1237,26 @@ contract TickerController is Ownable {
 
 
 contract CrowdsaleZangll is TickerController {
-    mapping(address => uint256) purchases; 
+    mapping(address => uint256) purchases;
     using SafeMath for uint256;
-    
-    Zangll public token = Zangll(0x632E15775Acb67303178aa8b08A26ba594f18D84);
 
-    uint256 public  start = 1511047218;  
+    ZangllCoin public token = ZangllCoin(0x632E15775Acb67303178aa8b08A26ba594f18D84);
+
+    uint256 public  start = 1511047218;
      uint256 public period= 28;
 
     uint256 public  priceInCents = 27;    // price in USD cents for 1 token
-    address public wallet; 
+    address public wallet;
     uint256 public totalPurchased = 0;
         // How many wei of funding we have raised
-    uint256 public weiRaised = 0;  
+    uint256 public weiRaised = 0;
 
     // Number of tokens already sold through this contract*/
     uint256 public funded = 0;
 
     uint256 public maxSupply = 140000000 * 10 ** 18;// maxPurchase
 
-    uint256 public purchaseCap = 3000000 * 10 ** 18;  // 3_000_000 tokens to one address 
+    uint256 public purchaseCap = 3000000 * 10 ** 18;  // 3_000_000 tokens to one address
 
     bool public pause = true;
     bool public end = false;
@@ -1265,7 +1265,7 @@ contract CrowdsaleZangll is TickerController {
     function purchasesOf(address purchaser) public constant returns (uint256 value) {
       return purchases[purchaser];
     }
- 
+
     event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 amount);
     event CrowdsalePaused(uint time);
     event CrowdsaleResumed(uint time);
@@ -1274,7 +1274,7 @@ contract CrowdsaleZangll is TickerController {
     function CrowdsaleZangll() {
       wallet = msg.sender;
     }
-    
+
     modifier validPurchase() {
         require(msg.value != 0);
         require(priceTicker.getEnabled());
@@ -1294,7 +1294,7 @@ contract CrowdsaleZangll is TickerController {
         pause = false;
         CrowdsaleResumed(now);
     }
-    
+
     function endCrowdsale(uint code) onlyOwner {
         require(end == false);
         require(code == 1234561);
@@ -1307,17 +1307,17 @@ contract CrowdsaleZangll is TickerController {
         uint256 centsPerETH = getCentsPerETH();
         require(centsPerETH != 0);
         require(now > start && now < start + period * 1 days);
-       require(purchases[msg.sender] < purchaseCap); 
+       require(purchases[msg.sender] < purchaseCap);
 
        uint tokens = msg.value.mul(centsPerETH).div(priceInCents);  // вычисление токенов за присланный эфир
       uint bonusTokens = 0;
         // uint bonusTokens = tokens.mul(bonusPercent).div(100);
       //Debag("base tokens = " + string(tokens));
-      if(now < start + 1 hours ) {                    //1 hour 
+      if(now < start + 1 hours ) {                    //1 hour
         bonusTokens = tokens.mul(35).div(100);
-      } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day 
+      } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
         bonusTokens = tokens.mul(30).div(100);
-      } else if(now >= start + start + 1 days && now < start + 2 days) { // 2 day 
+      } else if(now >= start + start + 1 days && now < start + 2 days) { // 2 day
         bonusTokens = tokens.mul(25).div(100);
       } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
         bonusTokens = tokens.mul(20).div(100);
@@ -1331,19 +1331,18 @@ contract CrowdsaleZangll is TickerController {
         require(tokens != 0);
      require(token.balanceOf(this) >= tokensWithBonus);
       require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
-      require(maxSupply >= totalPurchased + tokensWithBonus); 
-        
+      require(maxSupply >= totalPurchased + tokensWithBonus);
+
         weiRaised = weiRaised.add(msg.value);
         funded = funded.add(tokens);
-        wallet.transfer(msg.value);                 
-        token.transfer(beneficiary, tokens);        
+        wallet.transfer(msg.value);
+        token.transfer(beneficiary, tokens);
 
         TokenPurchase(msg.sender, beneficiary, tokens);
     }
- 
+
     function() payable {
         buyTokens(msg.sender);
     }
 
     }
-

@@ -204,7 +204,7 @@ contract BurnableToken is StandardToken {
  * Note they can later distribute these tokens as they wish using `transfer` and other
  * `StandardToken` functions.
  */
-contract Zangll is BurnableToken {
+contract ZangllCoin is BurnableToken {
 
   string public constant name = "Zangll";
   string public constant symbol = "ZNGL";
@@ -221,4 +221,3 @@ contract Zangll is BurnableToken {
   }
 
 }
-
