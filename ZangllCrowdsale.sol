@@ -1268,43 +1268,12 @@ contract CrowdsaleZangll is TickerController {
     }
 
     event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 amount);
-    event CrowdsalePaused(uint time);
-    event CrowdsaleResumed(uint time);
-    event CrowdsaleEnded(uint time);
 
     function CrowdsaleZangll() {
       wallet = msg.sender;
     }
 
-    modifier validPurchase() {
-        require(msg.value != 0);
-        require(priceTicker.getEnabled());
-        require(pause == false);
-        require(end == false);
-        _;
-    }
-
-    function pauseCrowdsale() onlyOwner {
-        require(pause == false);
-        pause = true;
-        CrowdsalePaused(now);
-    }
-
-    function resumeCrowdsale() onlyOwner {
-        require(pause == true);
-        pause = false;
-        CrowdsaleResumed(now);
-    }
-
-    function endCrowdsale(uint code) onlyOwner {
-        require(end == false);
-        require(code == 1234561);
-        end = true;
-        CrowdsaleEnded(now);
-    }
-
-
-    function buyTokens(address beneficiary) public validPurchase payable {
+    function buyTokens(address beneficiary) public payable {
         uint256 centsPerETH = getCentsPerETH();
         require(centsPerETH != 0);
         require(now > start && now < start + period * 1 days);
