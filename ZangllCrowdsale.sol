@@ -1248,6 +1248,11 @@ contract CrowdsaleZangll is TickerController {
     uint256 public  priceInCents = 27;    // price in USD cents for 1 token
     address public wallet; 
     uint256 public totalPurchased = 0;
+        // How many wei of funding we have raised
+    uint256 public weiRaised = 0;  
+
+    // Number of tokens already sold through this contract*/
+    uint256 public funded = 0;
 
     uint256 public maxSupply = 140000000 * 10 ** 18;// maxPurchase
 
@@ -1304,7 +1309,7 @@ contract CrowdsaleZangll is TickerController {
         require(now > start && now < start + period * 1 days);
        require(purchases[msg.sender] < purchaseCap); 
 
-       uint tokens = msg.value.mul(ETHUSD).div(priceInCents);  // вычисление токенов за присланный эфир
+       uint tokens = msg.value.mul(centsPerETH).div(priceInCents);  // вычисление токенов за присланный эфир
       uint bonusTokens = 0;
         // uint bonusTokens = tokens.mul(bonusPercent).div(100);
       //Debag("base tokens = " + string(tokens));
@@ -1332,7 +1337,7 @@ contract CrowdsaleZangll is TickerController {
         funded = funded.add(tokens);
         wallet.transfer(msg.value);                 
         token.transfer(beneficiary, tokens);        
-        
+
         TokenPurchase(msg.sender, beneficiary, tokens);
     }
  
