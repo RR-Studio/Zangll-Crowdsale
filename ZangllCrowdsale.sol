@@ -1240,12 +1240,13 @@ contract CrowdsaleZangll is TickerController {
     mapping(address => uint256) purchases;
     using SafeMath for uint256;
 
+    // The token being sold
     ZangllCoin public token = ZangllCoin(0x632E15775Acb67303178aa8b08A26ba594f18D84);
 
-    uint256 public  start = 1511047218;
-     uint256 public period= 28;
+    uint256 public start = 1511047218;
+    uint256 public period = 28;
 
-    uint256 public  priceInCents = 27;    // price in USD cents for 1 token
+    uint256 public priceInCents = 27;    // price in USD cents for 1 token
     address public wallet;
     uint256 public totalPurchased = 0;
         // How many wei of funding we have raised
@@ -1307,31 +1308,30 @@ contract CrowdsaleZangll is TickerController {
         uint256 centsPerETH = getCentsPerETH();
         require(centsPerETH != 0);
         require(now > start && now < start + period * 1 days);
-       require(purchases[msg.sender] < purchaseCap);
+        require(purchases[msg.sender] < purchaseCap);
 
-       uint tokens = msg.value.mul(centsPerETH).div(priceInCents);  // вычисление токенов за присланный эфир
-      uint bonusTokens = 0;
-        // uint bonusTokens = tokens.mul(bonusPercent).div(100);
-      //Debag("base tokens = " + string(tokens));
-      if(now < start + 1 hours ) {                    //1 hour
-        bonusTokens = tokens.mul(35).div(100);
-      } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
-        bonusTokens = tokens.mul(30).div(100);
-      } else if(now >= start + start + 1 days && now < start + 2 days) { // 2 day
-        bonusTokens = tokens.mul(25).div(100);
-      } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
-        bonusTokens = tokens.mul(20).div(100);
-      } else if(now >= start + 1 weeks && now < start + 2 weeks) {  //2 weeks
-        bonusTokens = tokens.mul(15).div(100);
-      } else if(now >= start + 2 weeks && now < start + 3 weeks) {    // 3 week
-        bonusTokens = tokens.mul(10).div(100);
-      }
-      uint tokensWithBonus = tokens.add(bonusTokens);
+        uint tokens = msg.value.mul(centsPerETH).div(priceInCents);  // вычисление токенов за присланный эфир
+        uint bonusTokens = 0;
+
+        if(now < start + 1 hours ) {                    //1 hour
+          bonusTokens = tokens.mul(35).div(100);
+        } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
+          bonusTokens = tokens.mul(30).div(100);
+        } else if(now >= start + start + 1 days && now < start + 2 days) { // 2 day
+          bonusTokens = tokens.mul(25).div(100);
+        } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
+          bonusTokens = tokens.mul(20).div(100);
+        } else if(now >= start + 1 weeks && now < start + 2 weeks) {  //2 weeks
+          bonusTokens = tokens.mul(15).div(100);
+        } else if(now >= start + 2 weeks && now < start + 3 weeks) {    // 3 week
+          bonusTokens = tokens.mul(10).div(100);
+        }
+        uint tokensWithBonus = tokens.add(bonusTokens);
 
         require(tokens != 0);
-     require(token.balanceOf(this) >= tokensWithBonus);
-      require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
-      require(maxSupply >= totalPurchased + tokensWithBonus);
+        require(token.balanceOf(this) >= tokensWithBonus);
+        require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
+        require(maxSupply >= totalPurchased + tokensWithBonus);
 
         weiRaised = weiRaised.add(msg.value);
         funded = funded.add(tokens);
@@ -1344,5 +1344,4 @@ contract CrowdsaleZangll is TickerController {
     function() payable {
         buyTokens(msg.sender);
     }
-
-    }
+}
