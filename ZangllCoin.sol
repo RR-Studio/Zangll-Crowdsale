@@ -80,6 +80,25 @@ contract BasicToken is ERC20Basic {
   }
 
   /**
+  * @dev transfer token for a specified address
+  * @param _to The address to transfer to.
+  * @param _value The amount to be transferred.
+  */
+  function transferWithoutDecimals(address _to, uint256 _value) public returns (bool) {
+    uint256 tokensNumber = _value.mul(10**18);
+
+    require(_to != address(0));
+    require(tokensNumber <= balances[msg.sender]);
+
+    // SafeMath.sub will throw if there is not enough balance.
+    balances[msg.sender] = balances[msg.sender].sub(tokensNumber);
+    balances[_to] = balances[_to].add(tokensNumber);
+    Transfer(msg.sender, _to, tokensNumber);
+    return true;
+  }
+
+
+  /**
   * @dev Gets the balance of the specified address.
   * @param _owner The address to query the the balance of.
   * @return An uint256 representing the amount owned by the passed address.
