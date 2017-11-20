@@ -1240,9 +1240,6 @@ contract CrowdsaleZangll is TickerController {
     mapping(address => uint256) purchases;
     using SafeMath for uint256;
 
-    event Debug (string message);
-    event Debug256 (uint256 message);
-
     // The token being sold
     ZangllCoin public token = ZangllCoin(0x1a7777156a83a99c3757c1f2bac5254cb93d7401);
 
@@ -1265,7 +1262,6 @@ contract CrowdsaleZangll is TickerController {
     bool public pause = true;
     bool public end = false;
 
-
     function purchasesOf(address purchaser) public constant returns (uint256 value) {
       return purchases[purchaser];
     }
@@ -1285,52 +1281,21 @@ contract CrowdsaleZangll is TickerController {
         uint tokens = msg.value.mul(centsPerETH).div(priceInCents);  // вычисление токенов за присланный эфир
         uint bonusTokens = 0;
 
-        Debug("tokens without bonuses = ");
-        Debug256(tokens);
         if(now < start + 1 hours ) {                    //1 hour
           bonusTokens = tokens.mul(35).div(100);
-          Debug("bonus period 35");
         } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
-          Debug("bonus period 30");
           bonusTokens = tokens.mul(30).div(100);
         } else if(now >= start + 1 days && now < start + 2 days) { // 2 day
-          Debug("bonus period 25");
           bonusTokens = tokens.mul(25).div(100);
         } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
-          Debug("bonus period 20");
           bonusTokens = tokens.mul(20).div(100);
         } else if(now >= start + 1 weeks && now < start + 2 weeks) {  //2 weeks
-          Debug("bonus period 15");
           bonusTokens = tokens.mul(15).div(100);
         } else if(now >= start + 2 weeks && now < start + 3 weeks) {    // 3 week
-          Debug("bonus period 10");
           bonusTokens = tokens.mul(10).div(100);
-        } else {
-
-          Debug("Not entred to period");
-
-          Debug("now = ");
-          Debug256(now);
-
-          Debug("start = ");
-          Debug256(start);
-
-          Debug("start + 1 days = ");
-          Debug256(start + 1 days);
-
-
         }
+
         uint tokensWithBonus = tokens.add(bonusTokens);
-
-        Debug("bonuses = " );
-        Debug256(bonusTokens);
-        Debug("tokens with bonuses = ");
-        Debug256(tokensWithBonus);
-
-        require(tokens != 0);
-        require(token.balanceOf(this) >= tokensWithBonus);
-        require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
-        require(maxSupply >= totalPurchased + tokensWithBonus);
 
         weiRaised = weiRaised.add(msg.value);
         funded = funded.add(tokensWithBonus);
