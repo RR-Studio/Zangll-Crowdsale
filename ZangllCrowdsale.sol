@@ -1057,10 +1057,6 @@ interface Zangll    {
 
 }
 
-interface MyFiatContract {
-    function GetPrice() constant returns (uint);
-}
-
 contract Ownable {
 
   address public owner;
@@ -1085,138 +1081,93 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 
 }
 
-contract CrowdsaleZangll is  UsingOraclize, Ownable {
-  mapping(address => uint256) purchases;  // сколько токенов купили на данный адрес
-  MyFiatContract public MyPrice;
 
-   event TokenPurchased(address purchaser, uint256 value, uint amount);
-  event ContractPaused(uint time);
-  event ContractPauseOff(uint time);
-  event ContractEnded(uint time);
 
+contract CMCEthereumTicker is UsingOraclize, Ownable {
     using SafeMath for uint;
-
-    address multisig;         //тот кому идут эфиры (creator of contract)
-
-
-    Zangll token = Zangll(0x632E15775Acb67303178aa8b08A26ba594f18D84);
-
-    uint start;   // start of CrowdsaleZangll
-
-    uint period;    // period of sale
-
-    uint priceInCents;
-
-    uint256 ETHUSD ;    // how many USD cents in 1 ETH
-
-    uint256 purchaseCap; // max purchase for a single address
-
-    uint256 public totalPurchased;  // total tokens purchased on crowdsale PUBLIC!!!
-
-    uint256 maxPurchase; // max tokens to crowdsale
-
-    bool public pause;
-    bool public end;
-    //uint32 public bonusPercent = 0;
-
-    // function bonusChange(uint32 newBonusPercent) {
-    //     uint32 bonusPercent = newBonusPercent;
-    // }
-
-    function changeOracul(address newOracle) onlyOwner {
-      MyPrice = MyFiatContract(newOracle);
+    
+    uint256 centsPerETH;
+    uint256 delay;
+    bool enabled;
+    
+    address manager;
+    
+    modifier onlyOwnerOrManager() { require(msg.sender == owner || msg.sender == manager); _; }
+    
+    event newOraclizeQuery(string description);
+    event newPriceTicker(string price);
+    
+    
+    function CMCEthereumTicker(address _manager, uint256 _delay) {
+        oraclize_setProof(proofType_NONE);
+        enabled = false;
+        manager = _manager;
+        delay = _delay;
+    }
+    
+    function getCentsPerETH() constant returns(uint256) {
+        return centsPerETH;
+    }
+    
+    function getDelay() constant returns(uint256) {
+        return delay;
+    }
+    
+    function getEnabled() constant returns(bool) {
+        return enabled;
     }
 
-    function CrowdsaleZangll() {
-
-      ETHUSD = MyPrice.GetPrice();
-      multisig = msg.sender;
-
-      priceInCents = 27;    // price in USD cents for 1 token
-      start = 1511047218;   // 19 ноября 2.20 утра 2017
-      period = 28;
-      purchaseCap = 3000000 * 10 ** 18;  // 3_000_000 tokens to one address
-      totalPurchased = 0;
-      maxPurchase = 140000000 * 10 ** 18; // 140_000_000 tokens sales on crowdsale
-      pause = false;
-      end = false;
+    function enable() 
+        onlyOwnerOrManager
+    {
+        require(enabled == false);
+        enabled = true;
+        update_instant();
     }
-
-    function purchasesOf(address purchaser) public constant returns (uint256 value) {
-      return purchases[purchaser];
+    
+    function disable() 
+        onlyOwnerOrManager
+    {
+        require(enabled == true);
+        enabled = false;
     }
-
-    modifier saleIsOn() {
-      require(now > start && now < start + period * 1 days);
-      require(totalPurchased <= maxPurchase);
-      require(pause == false);
-      require(end == false);
-      _;
+    
+    bytes32 private bugFix;
+    function __callback(bytes32 myid, string result) {
+        if (msg.sender != oraclize_cbAddress()) revert();
+        bugFix = myid;
+        centsPerETH = parseInt(result, 2);
+        newPriceTicker(result);
+        if (enabled) {
+           update(); 
+        }
     }
-
-    modifier isPaused() {
-      require(pause == true);
-      _;
+    
+    function update_instant() private {
+        if (oraclize.getPrice("URL") > this.balance) {
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+        } else {
+            newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+            oraclize_query("URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
+        }
     }
-
-    function setPauseOn() onlyOwner saleIsOn {
-      pause = true;
-      ContractPaused(now);
+    
+    function update() private {
+        if (oraclize.getPrice("URL") > this.balance) {
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+        } else {
+            newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+            oraclize_query(delay, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
+        }
     }
-
-    function setPauseOff() onlyOwner isPaused {
-      pause = false;
-      ContractPauseOff(now);
+    
+    function payToManager(uint256 _amount) 
+        onlyOwnerOrManager
+    {
+        manager.transfer(_amount);
     }
-
-    function endCrowdsale(uint code) onlyOwner {
-      uint password = 1234561;
-      require(password == code);
-      end = true;
-      ContractEnded(now);
-    }
-    /*
-    посылая 1 эфир инвестор получает 30000 центов = 30_000 / 27
-    */
-
-    function createTokens() saleIsOn payable {
-
-      require(purchases[msg.sender] < purchaseCap);     // не купил ли на 3 млн уже
-      //uint tokens = rate.mul(msg.value).div(1 ether);
-      uint tokens = msg.value.mul(ETHUSD).div(priceInCents);  // вычисление токенов за присланный эфир
-      uint bonusTokens = 0;
-        // uint bonusTokens = tokens.mul(bonusPercent).div(100);
-      Debug("base tokens = " + string(tokens));
-      if(now < start + 1 hours ) {                    //1 hour
-        bonusTokens = tokens.mul(35).div(100);
-      } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day
-        bonusTokens = tokens.mul(30).div(100);
-      } else if(now >= start + 1 days && now < start + 2 days) { // 2 day
-        bonusTokens = tokens.mul(25).div(100);
-      } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
-        bonusTokens = tokens.mul(20).div(100);
-      } else if(now >= start + 1 weeks && now < start + 2 weeks) {  //2 weeks
-        bonusTokens = tokens.mul(15).div(100);
-      } else if(now >= start + 2 weeks && now < start + 3 weeks) {    // 3 week
-        bonusTokens = tokens.mul(10).div(100);
-      }
-      uint tokensWithBonus = tokens.add(bonusTokens);
-
-      require(token.balanceOf(this) >= tokensWithBonus);
-      require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
-      require(maxPurchase >= totalPurchased + tokensWithBonus); //
-      Debug("total tokens = " + string(tokensWithBonus));
-      TokenPurchased(msg.sender, msg.value, tokensWithBonus);  // ивент покупки токенов (покупатель, цена в эфирах, кол-во токенов)
-      purchases[msg.sender] = purchases[msg.sender].add(tokensWithBonus);     // записать на адрес сумму купленных токенов
-      totalPurchased = totalPurchased.add(tokensWithBonus);        // суммировать все купленные токены
-      multisig.transfer(msg.value);           // перевод создателю всего эфира
-      token.transfer(msg.sender, tokensWithBonus);    // контракт с себя переводит токены инвестору
-    }
-
-  function() external payable {
-    createTokens();
-  }
-
+    
+    function () payable {}    
 }
 
 /**
@@ -1284,49 +1235,41 @@ contract TickerController is Ownable {
 }
 
 
-contract ZangllCrowdsale is TickerController {
+
+contract CrowdsaleZangll is TickerController {
+    mapping(address => uint256) purchases; 
     using SafeMath for uint256;
-
-    // The token being sold
-    ZangllCoin public token = ZangllCoin(0xccb46aec99e38e09c2847dfd18e54ba2e59b1ba2);
-
-    // Price of 1 token in USD cents
-    uint256 public priceInCents = 100;
     
-    // Address where funds are collected
+    Zangll public token = Zangll(0x632E15775Acb67303178aa8b08A26ba594f18D84);
+
+    uint256 public  start = 1511047218;  
+     uint256 public period= 28;
+
+    uint256 public  priceInCents = 27;    // price in USD cents for 1 token
     address public wallet; 
+    uint256 public totalPurchased = 0;
 
-    // How many wei of funding we have raised
-    uint256 public weiRaised = 0;  
+    uint256 public maxSupply = 140000000 * 10 ** 18;// maxPurchase
 
-    // Number of tokens already sold through this contract*/
-    uint256 public funded = 0;
-
-    // Mac tokens to crowdsale
-    uint256 public maxSupply = 3000000 * 10 ** 18; // 3_000_000 tokens sales on crowdsale 
-
-    // Bonus percent 
-    uint256 public bonusPercent = 40;
-
+    uint256 public purchaseCap = 3000000 * 10 ** 18;  // 3_000_000 tokens to one address 
 
     bool public pause = true;
     bool public end = false;
 
 
+    function purchasesOf(address purchaser) public constant returns (uint256 value) {
+      return purchases[purchaser];
+    }
+ 
     event TokenPurchase(address indexed purchaser, address indexed beneficiary, uint256 amount);
     event CrowdsalePaused(uint time);
     event CrowdsaleResumed(uint time);
     event CrowdsaleEnded(uint time);
 
-
-    function PaygineCrowdsale() {
+    function CrowdsaleZangll() {
       wallet = msg.sender;
     }
-
-    function changeBonus(uint256 newBonusPercent) onlyOwner {
-      bonusPercent = newBonusPercent;
-    }
- 
+    
     modifier validPurchase() {
         require(msg.value != 0);
         require(priceTicker.getEnabled());
@@ -1354,29 +1297,48 @@ contract ZangllCrowdsale is TickerController {
         CrowdsaleEnded(now);
     }
 
- 
+
     function buyTokens(address beneficiary) public validPurchase payable {
         uint256 centsPerETH = getCentsPerETH();
         require(centsPerETH != 0);
+        require(now > start && now < start + period * 1 days);
+       require(purchases[msg.sender] < purchaseCap); 
 
-        uint256 tokens = msg.value.mul(centsPerETH).mul(uint256(10)**18).div(priceInCents.mul(1 ether / 1 wei)).mul(100 + bonusPercent).div(100);
-        
+       uint tokens = msg.value.mul(ETHUSD).div(priceInCents);  // вычисление токенов за присланный эфир
+      uint bonusTokens = 0;
+        // uint bonusTokens = tokens.mul(bonusPercent).div(100);
+      //Debag("base tokens = " + string(tokens));
+      if(now < start + 1 hours ) {                    //1 hour 
+        bonusTokens = tokens.mul(35).div(100);
+      } else if(now >= start + 1 hours && now < start + 1 days) {   //1 day 
+        bonusTokens = tokens.mul(30).div(100);
+      } else if(now >= start + start + 1 days && now < start + 2 days) { // 2 day 
+        bonusTokens = tokens.mul(25).div(100);
+      } else if(now >= start + 2 days && now < start + 1 weeks) {   //1 week
+        bonusTokens = tokens.mul(20).div(100);
+      } else if(now >= start + 1 weeks && now < start + 2 weeks) {  //2 weeks
+        bonusTokens = tokens.mul(15).div(100);
+      } else if(now >= start + 2 weeks && now < start + 3 weeks) {    // 3 week
+        bonusTokens = tokens.mul(10).div(100);
+      }
+      uint tokensWithBonus = tokens.add(bonusTokens);
+
         require(tokens != 0);
-        require(token.balanceOf(this) >= tokens);
-        require(maxSupply >= funded + tokens);  
+     require(token.balanceOf(this) >= tokensWithBonus);
+      require(purchases[msg.sender] + tokensWithBonus <= purchaseCap);
+      require(maxSupply >= totalPurchased + tokensWithBonus); 
         
         weiRaised = weiRaised.add(msg.value);
         funded = funded.add(tokens);
         wallet.transfer(msg.value);                 
         token.transfer(beneficiary, tokens);        
-    
+        
         TokenPurchase(msg.sender, beneficiary, tokens);
     }
  
     function() payable {
         buyTokens(msg.sender);
     }
-    
-}
 
+    }
 
