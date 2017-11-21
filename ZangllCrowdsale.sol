@@ -1302,6 +1302,8 @@ contract CrowdsaleZangll is TickerController {
           bonusTokens = tokens.mul(15).div(100);
         } else if(now >= start + 2 weeks && now < start + 3 weeks) {  // 3 week
           bonusTokens = tokens.mul(10).div(100);
+        }else if(now >= start + 3 weeks && now < start + 4 weeks) {  // 4 week
+          bonusTokens = tokens.mul(5).div(100);
         }
         uint tokensWithBonus = tokens.add(bonusTokens);
 
